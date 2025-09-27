@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build CUDA",
+      "type": "shell",
+      "command": "nvcc src/matmul.cu -o matmul",
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "Run CUDA",
+      "type": "shell",
+      "command": "./matmul",
+      "dependsOn": ["Build CUDA"]
+    }
+  ]
+}

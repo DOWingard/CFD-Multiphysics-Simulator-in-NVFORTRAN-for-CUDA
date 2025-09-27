@@ -1,0 +1,20 @@
+{
+  "name": "CUDA Demo",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "runArgs": [
+    "--device", "nvidia.com/gpu=all",    
+    "--security-opt", "label=disable"    
+ ],
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  "remoteUser": "root",
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+  "extensions": [
+    "ms-vscode.cpptools",
+    "ms-vscode.cmake-tools"
+  ]
+}
