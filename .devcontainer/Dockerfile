@@ -26,6 +26,8 @@ RUN apt-get update && \
         zlib1g \
     && rm -rf /var/lib/apt/lists/*
 
+
+
 RUN git config --global user.name "Derek Wingard" && \
     git config --global user.email "derekwingard@gmail.com"
 
