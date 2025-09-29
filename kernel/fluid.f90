@@ -289,14 +289,14 @@ contains
             dU = 0.0_dp
 
             do f = 1,6
-                dU = dU + this%tangentBundle%mesh(i,j,k)%fluxes(f,:)
+                dU = dU + this%tangentBundle%mesh(i,j,k)%fluxes(f,:)   ! returns NAN
             end do
 
             dU = - dt / ds * dU
 
             ! Update cell's conserved variables
-            this%fluid(i,j,k)%U = this%fluid(i,j,k)%U + dU
-
+            this%fluid(i,j,k)%U = this%fluid(i,j,k)%U + dU    ! dU is NAN
+ 
         end do
         end do
         end do
