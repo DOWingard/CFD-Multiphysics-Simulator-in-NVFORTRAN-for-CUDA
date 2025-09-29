@@ -16,11 +16,15 @@ module fluid
 
     contains
 
-        procedure :: initCellWater
-        procedure :: assignLocation
+        procedure :: initCellWater_
+        procedure :: allocFluid_
+        procedure :: assignLocation_
         ! CPU
-        procedure :: fillCPU
+        procedure :: fillManifoldCPU
         procedure :: allocBundleCPU
+        procedure :: loadBundleCPU
+        procedure :: initDensityGaussianCPU
+        procedure :: updateCPU
         ! GPU
 
         !procedure :: updateManifold
@@ -33,7 +37,7 @@ module fluid
 
 contains
 
-    subroutine initCellWater(this, cell, volume)
+    subroutine initCellWater_(this, cell, volume)
     !
     !   initialize the cell
     !
@@ -55,9 +59,24 @@ contains
 
         call cell%init(config,volume)
 
-    end subroutine initcellwater
+    end subroutine initcellwater_
 
-    subroutine assignLocation(this, location)
+
+    subroutine allocFluid_(this, N)
+    !
+    !   allocate the Fluid    
+    !
+        class(manifold), intent(inout) :: this 
+        integer, intent(in)            :: N
+
+
+
+        if (allocated(this%fluid)) deallocate(this%fluid)
+        allocate(this%fluid(N,N,N))
+
+    end subroutine
+
+    subroutine assignLocation_(this, location)
     !
     !   assign location to the cell in the manifold at this location
     !
@@ -67,10 +86,10 @@ contains
         ! call setLocation on the cell at (i,j,k)
         call this%fluid(location(1), location(2), location(3))%setLocation(location)
 
-    end subroutine assignLocation
+    end subroutine assignLocation_
 
 
-    subroutine fillCPU(this, N, volume)
+    subroutine fillManifoldCPU(this, N, volume)
     !
     !   populates manifold with cells
     !
@@ -85,8 +104,6 @@ contains
 
         this%N = N
 
-        !parallel computing in fortran is truly the best
-
         !=========================================================
         !$OMP PARALLEL DO COLLAPSE(3) PRIVATE(i,j,k,location)
         !=========================================================
@@ -99,8 +116,8 @@ contains
 
             allocate(this%fluid(i,j,k))
 
-            call assignLocation(this, location)
-            call initCellWater(this, this%fluid(i,j,k),  volume)
+            call assignLocation_(this, location)
+            call initCellWater_(this, this%fluid(i,j,k),  volume)
  
 
         end do
@@ -112,7 +129,7 @@ contains
         !=========================================================
 
         
-    end subroutine fillCPU
+    end subroutine fillManifoldCPU
 
 
 
@@ -123,10 +140,171 @@ contains
         class(manifold), intent(inout) :: this
         integer, intent(in)            :: n
 
+
+
+        if (allocated(this%tangentBundle)) deallocate(this%tangentBundle)
+
         allocate(this%tangentBundle)
         call this%tangentBundle%alloc(N)
 
     end subroutine
+
+
+    subroutine loadBundleCPU(this, dt, ds, gamma, N) 
+    !
+    !   computes the total change to cells
+    !   using sum of Rusanov FLuxes and
+    !   stores in tangent bundle mesh
+    !
+    !   assumed dx,dy,dz = ds 
+        class(manifold), intent(inout) :: this 
+        real(dp), intent(in)           :: dt, ds, gamma
+        integer, intent(in)            :: N
+        ! private
+        integer              :: i, j, k, f
+        integer              :: ni, nj, nk
+        integer              :: nhat(3)
+        real(dp)             :: flux(5)
+        class(cell), pointer :: cellL, cellR
+
+
+        if (.not. allocated(this%tangentBundle)) call this%allocBundleCPU(N)
+
+        !=========================================================
+        !$OMP PARALLEL DO COLLAPSE(3) PRIVATE(i,j,k,f,ni,nj,nk,nhat,flux,cellL,cellR)
+        !=========================================================
+
+            do i = 1, N
+            do j = 1, N
+            do k = 1, N
+
+                ! 6 faces per cell: i-, i+, j-, j+, k-, k+
+                do f = 1, 6
+                    select case(f)
+                    case(1) ! i-
+                        if (i == 1) cycle
+                        ni = i-1; nj = j; nk = k
+                        nhat = (/-1,0,0/)
+                    case(2) ! i+
+                        if (i == N) cycle
+                        ni = i; nj = j; nk = k
+                        nhat = (/1,0,0/)
+                    case(3) ! j-
+                        if (j == 1) cycle
+                        ni = i; nj = j-1; nk = k
+                        nhat = (/0,-1,0/)
+                    case(4) ! j+
+                        if (j == N) cycle
+                        ni = i; nj = j; nk = k
+                        nhat = (/0,1,0/)
+                    case(5) ! k-
+                        if (k == 1) cycle
+                        ni = i; nj = j; nk = k-1
+                        nhat = (/0,0,-1/)
+                    case(6) ! k+
+                        if (k == N) cycle
+                        ni = i; nj = j; nk = k
+                        nhat = (/0,0,1/)
+                    end select
+
+                    cellL => this%fluid(ni,nj,nk)
+                    cellR => this%fluid(i,j,k)
+
+                    flux = rusFlux(cellL, cellR, gamma, nhat)
+
+
+                    ! Store fluxes in tangent bundle
+                    this%tangentBundle%mesh(i,j,k)%fluxes(f,:) = flux
+
+                end do
+            end do
+            end do
+            end do
+
+        !=========================================================
+        !$OMP END PARALLEL DO
+        !=========================================================
+
+
+
+    end subroutine loadBundleCPU
+
+
+    subroutine initDensityGaussianCPU(this, N)
+    !
+    !   scales the densities by scaling mesh
+    !
+        class(manifold), intent(inout)    :: this
+        integer, intent(in)               :: N
+        ! private
+        real(dp), allocatable             :: scalingMesh(:,:,:)
+        integer                           :: i, j, k
+
+
+        scalingMesh = pressureAtCenter(N)
+
+
+        !=========================================================
+        !$OMP PARALLEL DO COLLAPSE(3) PRIVATE(i,j,k)
+        !=========================================================
+
+        do i = 1,N
+        do j = 1,N
+        do k = 1,N
+
+            this%fluid(i,j,k)%U = this%fluid(i,j,k)%U * scalingMesh(i,j,k)
+
+        end do
+        end do
+        end do
+
+        !=========================================================
+        !$OMP END PARALLEL DO
+        !=========================================================
+
+    end subroutine initDensityGaussianCPU
+
+
+
+    subroutine updateCPU(this, dt, ds)
+    !
+    !   Updates all cells in the manifold using
+    !   the 6 stored fluxes in the tangent bundle.
+    !
+        class(manifold), intent(inout) :: this
+        real(dp), intent(in)           :: dt, ds
+        integer                        :: i,j,k,f
+        real(dp)                       :: dU(5)
+        integer                        :: N
+
+        N = this%N
+
+        !=========================================================
+        !$OMP PARALLEL DO COLLAPSE(3) PRIVATE(i,j,k,f,dU)
+        !=========================================================
+        do i = 1,N
+        do j = 1,N
+        do k = 1,N
+
+            dU = 0.0_dp
+
+            do f = 1,6
+                dU = dU + this%tangentBundle%mesh(i,j,k)%fluxes(f,:)
+            end do
+
+            dU = - dt / ds * dU
+
+            ! Update cell's conserved variables
+            this%fluid(i,j,k)%U = this%fluid(i,j,k)%U + dU
+
+        end do
+        end do
+        end do
+        !=========================================================
+        !$OMP END PARALLEL DO
+        !=========================================================
+
+    end subroutine updatecpu
 
 
 
@@ -205,48 +383,43 @@ function rusFlux(cellL, cellR, gamma, nhat) result(flux)
 
 end function rusFlux
 
-function totalChange(location, dt, ds, gamma, N) result(dU)
-!
-!   computes the total change to a cell
-!   using sum of Rusanov FLuxes
-!
-!   assumed dx,dy,dz = ds 
-    real(dp), intent(in)   :: dt, ds, gamma
-    integer, intent(in)    :: N, location(3)
-    real(dp)               :: dU
-    ! private
-    real(dp)               :: fluxes(6,5) ! 6 size(5) flux vectors
-    integer                :: i, j, k
 
+! create demo 3d Point Spread Function 
+! type pressure scaling mesh
 
+function pressureAtCenter(N) result(p)
+    implicit none
+    integer, intent(in) :: N
+    real(dp), allocatable :: p(:,:,:)
+    integer :: i, j, k, ic, jc, kc
+    real(dp) :: r2, sigma
+
+    
+    ic = N/2
+    jc = N/2
+    kc = N/2
+
+    sigma = N / 6 ! reasonable bump sharpness
+
+    allocate(p(N,N,N))
 
     !=========================================================
-    !$OMP PARALLEL DO COLLAPSE(3) PRIVATE(i,j,k,location)
+    !$OMP PARALLEL DO COLLAPSE(3) PRIVATE(i,j,k,r2) SHARED(p)
     !=========================================================
-
-    !do i = location(1), location(1) + 1
-    !do j = location(2), location(2) + 1
-    !do k = location(3), location(3) + 1
-
-    !    location =  (/ i,j,k /)
-
-    !    allocate(this%fluid(i,j,k))
-
-    !    call assignLocation(this, this%fluid(i,j,k), location)
-    !    call initCellWater(this, this%fluid(i,j,k),  volume)
-
-
-    !end do
-    !end do
-    !end do
-
+    do i = 1, N
+        do j = 1, N
+            do k = 1, N
+                r2 = real((i-ic)**2 + (j-jc)**2 + (k-kc)**2, dp)
+                p(i,j,k) = 1.0_dp + 4.0_dp * exp(-r2 / (2.0_dp*sigma**2))
+            end do
+        end do
+    end do
     !=========================================================
     !$OMP END PARALLEL DO
     !=========================================================
 
+end function pressureAtCenter
 
-
-end function totalchange
 
 
 ! =====================================================

@@ -1,5 +1,5 @@
 
-	subroutine d01bcf(itype,aa,bb,cc,dd,npnts,weight,abscis,ifail)
+subroutine d01bcf(itype,aa,bb,cc,dd,npnts,weight,abscis,ifail)
 ! mark 8 release. nag copyright 1979.
 ! mark 9c revised. ier-370 (jun 1982).
 ! mark 11.5(f77) revised. (sept 1985.)
