@@ -1,0 +1,10 @@
+#!/bin/bash
+
+BUILD_DIR="./build"
+
+if [ -d "$BUILD_DIR" ]; then
+    rm -rf "$BUILD_DIR"/*
+    echo "✅ Cleaned all files in $BUILD_DIR"
+else
+    echo "⚠️  Build directory $BUILD_DIR does not exist"
+fi
