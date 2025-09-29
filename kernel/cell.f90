@@ -1,4 +1,4 @@
-module element 
+module cell 
 !
 !   creates cell type to store
 !   conserved values and 
@@ -85,4 +85,4 @@ contains
 
 
 
-end module element
+end module cell

@@ -1,0 +1,86 @@
+module tangent
+!
+!   simple module to contain
+!   the type for tangent bundle
+!
+    use numtype
+    implicit none 
+
+
+    type flux 
+
+        real(dp), allocatable :: fluxes(:,:)
+
+    contains
+
+        procedure :: setSize
+
+    end type flux
+
+
+
+
+    type bundle 
+
+        class(flux), allocatable :: mesh(:,:,:)
+
+    contains
+
+        procedure :: alloc 
+
+    end type bundle
+
+
+
+
+
+
+contains 
+
+
+    subroutine alloc(this, size)
+    !
+    !   allocate whole bundle
+    !
+        class(bundle), intent(inout) :: this
+        integer, intent(in) :: size
+        integer :: i,j,k
+
+        ! Allocate the 3D mesh
+        allocate(this%mesh(size,size,size))
+
+        !=========================================================
+        !$OMP PARALLEL DO COLLAPSE(3) PRIVATE(i,j,k)
+        !=========================================================
+
+        do k = 1, size
+        do j = 1, size
+        do i = 1, size
+
+            call this%mesh(i,j,k)%setSize(size)
+
+        end do
+        end do
+        end do
+
+        !=========================================================
+        !$OMP END PARALLEL DO
+        !=========================================================
+
+    end subroutine alloc
+
+
+    subroutine setSize(this, size)
+    !
+    !   allocate size
+    !
+        class(flux), intent(inout) :: this
+        integer, intent(in)        :: size
+
+        if (allocated(this%fluxes)) deallocate(this%fluxes)
+        allocate(this%fluxes(6,size))
+
+    end subroutine setsize
+    
+
+end module tangent

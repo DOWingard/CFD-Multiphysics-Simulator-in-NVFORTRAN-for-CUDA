@@ -2,7 +2,7 @@ program CFluid
 !
 !   main program to run compressible fluid FIE simulation
 !
-use element
+use cell
 implicit none
 
 
@@ -31,7 +31,7 @@ location = (/1,1,1/)
 
 call fecell%setLocation(location)
 call fecell%init(config,volume)
-call fecell%update(dU)
+!call fecell%update(dU)
 
 
 
