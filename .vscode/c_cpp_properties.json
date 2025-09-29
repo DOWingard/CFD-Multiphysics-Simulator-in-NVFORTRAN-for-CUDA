@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Linux CUDA HPC SDK",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/opt/nvidia/hpc_sdk/Linux_x86_64/25.7/cuda/include",
+                "/opt/nvidia/hpc_sdk/Linux_x86_64/25.7/compilers/include",
+                "/opt/nvidia/hpc_sdk/Linux_x86_64/25.7/cuda/include/crt"
+            ],
+            "defines": [
+                "__CUDACC__",
+                "__NVCC__"
+            ],
+            "compilerPath": "/opt/nvidia/hpc_sdk/Linux_x86_64/25.7/compilers/bin/nvc++",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}

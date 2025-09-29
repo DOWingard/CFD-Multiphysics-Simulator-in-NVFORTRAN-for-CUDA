@@ -1,17 +1,91 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Build CUDA",
-      "type": "shell",
-      "command": "nvcc src/matmul.cu -o matmul",
-      "group": { "kind": "build", "isDefault": true }
-    },
-    {
-      "label": "Run CUDA",
-      "type": "shell",
-      "command": "./matmul",
-      "dependsOn": ["Build CUDA"]
-    }
-  ]
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Start Docker Container",
+        "type": "shell",
+        "command": "docker",
+        "args": [
+          "run",
+          "-it",
+          "--rm",
+          "-v",
+          "/opt/nvidia/hpc_sdk/Linux_x86_64:/opt/nvidia/hpc_sdk/Linux_x86_64:ro",
+          "-v",
+          "${workspaceFolder}:/workspaces/LinearAlgebraCUDA",
+          "-w",
+          "/workspaces/LinearAlgebraCUDA",
+          "linearalgebracuda:latest",
+          "bash",
+          "-c",
+          "export PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/25.7/cuda/bin:/opt/nvidia/hpc_sdk/Linux_x86_64/25.7/compilers/bin:$PATH && bash"
+        ],
+        "presentation": {
+          "panel": "dedicated",
+          "reveal": "always"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Setup Environment",
+        "type": "shell",
+        "command": "bash",
+        "args": [
+          ".devcontainer/setup.sh"
+        ],
+        "presentation": {
+          "panel": "shared"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Build CUDA (nvcc)",
+        "type": "shell",
+        "command": "nvcc",
+        "args": [
+          "-allow-unsupported-compiler",
+          "-arch=sm_75",
+          "-g",
+          "-G",
+          "--std=c++17",
+          "-o",
+          "${workspaceFolder}/build/${fileBasenameNoExtension}",
+          "${file}"
+        ],
+        "presentation": {
+          "panel": "shared"
+        },
+        "problemMatcher": {
+          "owner": "nvcc",
+          "fileLocation": [
+            "relative",
+            "${workspaceFolder}"
+          ],
+          "pattern": {
+            "regexp": "^(.*)\\((\\d+)\\):\\s+(warning|error):\\s+(.*)$",
+            "file": 1,
+            "line": 2,
+            "severity": 3,
+            "message": 4
+          }
+        }
+      },
+      {
+        "label": "Build CUDA Optimized",
+        "type": "shell",
+        "command": "nvcc",
+        "args": [
+          "-allow-unsupported-compiler",
+          "-arch=sm_75",
+          "-O3",
+          "--std=c++17",
+          "-o",
+          "${workspaceFolder}/build/${fileBasenameNoExtension}_opt",
+          "${file}"
+        ],
+        "presentation": {
+          "panel": "shared"
+        }
+      }
+    ]
 }
