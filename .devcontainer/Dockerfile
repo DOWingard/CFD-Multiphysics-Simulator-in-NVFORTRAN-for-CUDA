@@ -41,6 +41,8 @@ ENV MANPATH=/opt/nvidia/hpc_sdk/Linux_x86_64/25.7/compilers/man:${MANPATH}
 
 RUN pip3 install numpy matplotlib jupyter ipython
 RUN chmox +x scripts/*
+RUN export PATH="$PATH:$(pwd)/scripts"
+RUN source ~/.bashrc
 
 USER $USERNAME
 
