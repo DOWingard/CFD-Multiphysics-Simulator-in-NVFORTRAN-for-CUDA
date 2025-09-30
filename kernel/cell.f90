@@ -112,7 +112,7 @@ contains
         end if
 
         if (rho <= tiny(1.0_dp)) then
-            print *, "Invalid density in cell (rho ~ 0)"
+            if (isDebug .eq. 1) print *, "Invalid density in cell (rho ~ 0)"
             return
         end if
 
@@ -123,7 +123,7 @@ contains
         e_internal = this%U(5) - kinetic
 
         if (e_internal <= 0.0_dp) then
-            print *, "Non-physical state: negative internal energy"
+            if (isDebug .eq. 1) print *, "Non-physical state: negative internal energy"
             return
         end if
 

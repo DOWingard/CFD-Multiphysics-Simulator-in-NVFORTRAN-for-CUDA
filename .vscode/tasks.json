@@ -27,18 +27,6 @@
         "problemMatcher": []
       },
       {
-        "label": "Setup Environment",
-        "type": "shell",
-        "command": "bash",
-        "args": [
-          ".devcontainer/setup.sh"
-        ],
-        "presentation": {
-          "panel": "shared"
-        },
-        "problemMatcher": []
-      },
-      {
         "label": "Build CUDA (nvcc)",
         "type": "shell",
         "command": "nvcc",

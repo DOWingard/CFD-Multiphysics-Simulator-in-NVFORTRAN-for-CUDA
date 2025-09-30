@@ -53,11 +53,16 @@ program simTest
     call logger_start()
     do i = 1,tmax
         call model%update()
-        if (mod(i,5) .eq. 0) call model%writePressureStateCPU()
+        if (mod(i,2) .eq. 0) call model%writePressureStateCPU()
     end do
     call logger_stop()
 
-    print*, "Total computation time: ", get_total_time()
+    print*, "\n"
+    write(*,'(A25,F12.6,A)') "Total Computation Time: ", get_total_time(), " seconds"
+    write(*,'(A25,F12.6,A)') "Simulation Timesteps: ", model%clock / model%timestep, " steps"
+    write(*,'(A25,F12.6,A)') "Simulation Duration: ", model%clock, " seconds"
+    print*, "\n"
+
     call logger_reset()
 
     if (allocated(model)) deallocate(model)

@@ -13,6 +13,28 @@ export NVHPC_COMPILERS=${NVHPC_HOME}/compilers
 export PATH=${NVHPC_COMPILERS}/bin:${CUDA_HOME}/bin:${PATH}
 export LD_LIBRARY_PATH=${NVHPC_COMPILERS}/lib:${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
 
+
+chmod +x scripts/*
+chmod +x pyinterface/plot.py
+chmod +x kernel/scripts/*
+
+
+export PATH="$PATH:$(pwd)/scripts"
+export PATH="$PATH:$(pwd)/pyinterface"
+export PATH="$PATH:$(pwd)/kernel/scripts"
+
+for dir in scripts pyinterface kernel/scripts; do
+    grep -qxF "export PATH=\"\$PATH:$(pwd)/$dir\"" ~/.bashrc || \
+        echo "export PATH=\"\$PATH:$(pwd)/$dir\"" >> ~/.bashrc
+done
+
+source ~/.bashrc
+
+echo "Setup complete. Scripts and plot.py are executable and PATH is updated."
+
+
+pip3 install numpy matplotlib jupyter ipython imageio scipy
+
 WORKSPACE_DIR=$(pwd)
 mkdir -p "${WORKSPACE_DIR}/build"
 

@@ -39,10 +39,12 @@ ENV PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/25.7/compilers/bin:/opt/nvidia/hpc_sdk
 ENV LD_LIBRARY_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/25.7/compilers/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/25.7/cuda/lib64:${LD_LIBRARY_PATH}
 ENV MANPATH=/opt/nvidia/hpc_sdk/Linux_x86_64/25.7/compilers/man:${MANPATH}
 
-RUN pip3 install numpy matplotlib jupyter ipython
+RUN pip3 install numpy matplotlib jupyter ipython imageio
 
 RUN chmod +x scripts/*
 RUN export PATH="$PATH:$(pwd)/scripts"
+RUN chmod +x pyinterface/plot.py
+RUN export PATH="$PATH:$(pwd)/pyinterface"
 RUN cd kernel
 RUN chmod +x scripts/*
 RUN cd ..

@@ -1,11 +1,15 @@
+
 build/
 bin/
 obj/
 
+
 *.exe
 *.out
+
 *.o
 *.obj
+*.mod
 *.so
 *.dylib
 *.dll
@@ -14,20 +18,10 @@ obj/
 *.fatbin
 *.ptx
 
-.vscode/settings.json
-.vscode/launch.json
-.vscode/tasks.json
+
 *.swp
 *.swo
 *~
-
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
 
 CMakeCache.txt
 CMakeFiles/
@@ -35,6 +29,11 @@ cmake_install.cmake
 Makefile
 
 *.log
-
 *.tmp
 *.temp
+
+kernel/*.mod
+kernel/*.o
+kernel/testing/*.mod
+kernel/testing/*.o
+kernel/cfd

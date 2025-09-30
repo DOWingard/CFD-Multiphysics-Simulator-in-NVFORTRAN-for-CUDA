@@ -2,16 +2,19 @@
 
 BUILD_DIR="./build"
 DATA_DIR="./kernel/data"
+PLOTS_DIR="./plots"
 
 TARGET="$BUILD_DIR"
 
 if [ "$1" == "--data" ]; then
     TARGET="$DATA_DIR"
+elif [ "$1" == "--plots" ]; then
+    TARGET="$PLOTS_DIR"
 fi
 
 if [ -d "$TARGET" ]; then
     rm -rf "$TARGET"/*
-    echo "✅ Cleaned all files in $TARGET"
+    echo "Cleaned all files in $TARGET"
 else
-    echo "⚠️  Directory $TARGET does not exist"
+    echo "Directory $TARGET does not exist"
 fi

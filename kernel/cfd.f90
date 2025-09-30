@@ -152,7 +152,7 @@ contains
             if (isDebug .eq. 1) print*, "\nCUDA ACTIVE: USING GPU for CFD%init (not yet implemented)"
         end if
 
-        write(*,*) "\nCFD system initialized for type:", trim(this%type)
+        write(*,*) "\nCFD system initialized for type:", trim(this%type), "\n"
 
 
     end subroutine init
@@ -228,18 +228,38 @@ contains
 
     subroutine writePressureStateCPU(this)
     !
-    !   write pressure state of sustem to data/
+    !   write pressure state of system to data/
     !
         class(cfd), intent(in) :: this
+        ! private
         integer :: timestep_idx
         integer :: i,j,k
         integer :: unit
         integer :: ios
         character(len=64) :: filename
-
+        real(dp), allocatable :: pressures(:,:,:)
+        
         timestep_idx = nint(this%clock / this%timestep)
-
         write(filename,'(A,I0)') 'data/fort.', timestep_idx
+
+        allocate(pressures(this%meshSize,this%meshSize,this%meshSize))
+
+        
+        !=============================================================
+        !$OMP PARALLEL DO collapse(3) private(i,j,k) shared(pressures)
+        !=============================================================
+        do k = 1, this%meshSize
+            do j = 1, this%meshSize
+                do i = 1, this%meshSize
+                    pressures(i,j,k) = this%fluid%fluid(i,j,k)%cellPressure()
+                end do
+            end do
+        end do
+        !=============================================================
+        !$OMP END PARALLEL DO
+        !=============================================================
+
+
 
         open(newunit=unit, file=filename, status='replace', action='write', form='formatted', iostat=ios)
         if (ios /= 0) then
@@ -247,20 +267,20 @@ contains
             return
         end if
 
+        ! thread safe to do this in series :(
         do k = 1, this%meshSize
-        do j = 1, this%meshSize
-        do i = 1, this%meshSize
-
-            write(unit,*) i, j, k, this%fluid%fluid(i,j,k)%cellPressure()
-            
-        end do
-        end do
+            do j = 1, this%meshSize
+                do i = 1, this%meshSize
+                    write(unit,*) i, j, k, pressures(i,j,k)
+                end do
+            end do
         end do
 
         close(unit)
-
+        deallocate(pressures)
 
     end subroutine writePressureStateCPU
+
 
 
 
