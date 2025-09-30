@@ -10,6 +10,7 @@ module tangent
         real(dp), allocatable :: fluxes(:,:)
     contains
         procedure :: setSize
+        
         final     :: destructorTangent__
     end type flux
 
@@ -22,12 +23,13 @@ module tangent
 
 contains 
 
-    subroutine alloc(this, size)
+    subroutine alloc(this, size, nvars)
     !
     !   allocate whole bundle
     !
         class(bundle), intent(inout) :: this
         integer, intent(in) :: size
+        integer, intent(in) :: nvars   ! number of conserved variables
         integer :: i,j,k
 
         allocate(this%mesh(size,size,size))
@@ -38,7 +40,7 @@ contains
         do k = 1, size
         do j = 1, size
         do i = 1, size
-            call this%mesh(i,j,k)%setSize(size)
+            call this%mesh(i,j,k)%setSize(nvars)
         end do
         end do
         end do
@@ -48,15 +50,16 @@ contains
 
     end subroutine alloc
 
-    subroutine setSize(this, size)
+    subroutine setSize(this, nvars)
     !
     !   allocate size
     !
         class(flux), intent(inout) :: this
-        integer, intent(in)        :: size
+        integer, intent(in)        :: nvars
 
         if (allocated(this%fluxes)) deallocate(this%fluxes)
-        allocate(this%fluxes(6,size))
+        allocate(this%fluxes(6,nvars))
+        this%fluxes = 0.0_dp      ! initialize elements at each point
 
     end subroutine setsize
 

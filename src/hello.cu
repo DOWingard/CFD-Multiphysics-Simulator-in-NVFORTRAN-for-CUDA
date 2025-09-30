@@ -1,6 +1,8 @@
 #include <cuda_runtime.h>
 #include <iostream>
-
+/*
+ *  Simple test to make sure CUDA works
+ */
 __global__ void hello_kernel() {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     printf("Hello from CUDA thread %d!\n", tid);

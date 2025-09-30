@@ -3,15 +3,21 @@ program simTest
 !   main program to run compressible fluid FIE simulation
 !
     use cfd
+    use logger
     implicit none
 
     ! water system test parameters
     class(CFD), allocatable   :: model
     character(5)              :: type = "water"
-    integer                   :: modelSize = 50!= N <=> manifold(N,N,N)
-    real(dp)                  :: volume = 1._dp, timestep = 0.01_dp, spHeat = 4.186_dp
+    integer                   :: modelSize = 40!= N <=> manifold(N,N,N)
+    real(dp)                  :: volume = 1._dp, timestep = 0.002_dp, spHeat = 4.186_dp
     logical                   :: useGPU = .false.
+    integer                   :: i, tmax
+  
 
+    !
+    !   timestep here is below CFL condition estimation of ~0.003-0.004
+    !
 
     !type :: CFD
     !    class(manifold), allocatable   :: fluid
@@ -35,7 +41,24 @@ program simTest
     call model%setup(type, modelSize, volume, timestep, spHeat, useGPU)
     call model%init()
     call model%setState()
-    call model%update()
+
+    ! test 3 separate time
+    
+    ! 1: t = 1  (initial state in fortran)
+    call model%writePressureStateCPU()
+    
+    tmax = 100
+
+
+    call logger_start()
+    do i = 1,tmax
+        call model%update()
+        if (mod(i,5) .eq. 0) call model%writePressureStateCPU()
+    end do
+    call logger_stop()
+
+    print*, "Total computation time: ", get_total_time()
+    call logger_reset()
 
     if (allocated(model)) deallocate(model)
 

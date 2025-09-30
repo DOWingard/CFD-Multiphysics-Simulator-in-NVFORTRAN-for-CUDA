@@ -1,10 +1,17 @@
 #!/bin/bash
 
 BUILD_DIR="./build"
+DATA_DIR="./kernel/data"
 
-if [ -d "$BUILD_DIR" ]; then
-    rm -rf "$BUILD_DIR"/*
-    echo "✅ Cleaned all files in $BUILD_DIR"
+TARGET="$BUILD_DIR"
+
+if [ "$1" == "--data" ]; then
+    TARGET="$DATA_DIR"
+fi
+
+if [ -d "$TARGET" ]; then
+    rm -rf "$TARGET"/*
+    echo "✅ Cleaned all files in $TARGET"
 else
-    echo "⚠️  Build directory $BUILD_DIR does not exist"
+    echo "⚠️  Directory $TARGET does not exist"
 fi

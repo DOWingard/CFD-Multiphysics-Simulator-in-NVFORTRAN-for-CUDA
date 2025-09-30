@@ -23,14 +23,18 @@ module cfd
     contains
 
         !procedure :: addCFDtype
-        procedure :: setup         ! Usage: (str fluidtype, int N, double V, double dt, double gamma, bool isCUDA)
-        procedure :: init          ! Usage: ()
-        procedure :: setState      ! Usage: ()
-        procedure :: update        ! Usage: ()
-        !procedure :: writeState    ! Usage: ()
+        procedure :: setup                  ! Usage: (str fluidtype, int N, double V, double dt, double gamma, bool isCUDA)
+        procedure :: init                   ! Usage: ()
+        procedure :: setState               ! Usage: ()
+        procedure :: update                 ! Usage: ()
+        procedure :: writePressureState     ! Usage: ()
         ! private methods
-        procedure :: loadTangentBundleCPU_
-        procedure :: updateFromTangentBundleCPU_
+        procedure :: writePressureStateCPU 
+        procedure :: loadTangentBundleCPU
+        procedure :: updateFromTangentBundleCPU
+
+        ! cleanup
+        !procedure :: resetTangentBundle
 
         final     :: destructorCFD__
 
@@ -141,14 +145,16 @@ contains
         end if
 
         if (.not. this%useGPU) then 
-            print*, "\nUSING CPU..."
+            if (isDebug .eq. 1) print*, "\nUSING CPU for CFD%init"
             call this%fluid%fillManifoldCPU(this%meshSize, this%volume)
             call this%fluid%allocBundleCPU(this%meshSize)
         else
-            print*, "\nCUDA ACTIVE: USING GPU (not yet implemented)"
+            if (isDebug .eq. 1) print*, "\nCUDA ACTIVE: USING GPU for CFD%init (not yet implemented)"
         end if
 
         write(*,*) "\nCFD system initialized for type:", trim(this%type)
+
+
     end subroutine init
 
 
@@ -169,36 +175,120 @@ contains
     end subroutine setState
 
     subroutine update(this)
-        !
-        !   complete update, use private_ methods for 
-        !   building/testing/debugging
-        !
+    !
+    !   complete update, use private_ methods for 
+    !   building/testing/debugging
+    !
         class(cfd), intent(inout) :: this
 
         if (.not. this%useGPU) then
-            print*, "\nUsing CPU..."
-            call this%loadTangentBundleCPU_()
-            call this%updateFromTangentBundleCPU_()
+            if (isDebug .eq. 1) print*, "\nBefore update: ", this%fluid%fluid(this%meshSize/2, this%meshSize/2, this%meshSize/2)%U(1)
+            if (isDebug .eq. 1) print*, "Using CPU for CFD%update"
+
+            ! Build and apply update
+            call this%loadTangentBundleCPU()
+            call this%updateFromTangentBundleCPU()
+
+            if (isDebug .eq. 1) print*, "After update: ", this%fluid%fluid(this%meshSize/2, this%meshSize/2, this%meshSize/2)%U(1)
         else
-            print*, "\nUsing CUDA with GPU (not yet implemented)"
+            if (isDebug .eq. 1) print*, "\nCUDA ACTIVE: USING GPU for CFD%update (not yet implemented)"
         end if
 
     end subroutine update
 
 
-    subroutine loadTangentBundleCPU_(this)
+    !subroutine resetTangentBundle(this)
+    !
+    !   resets the bundle to prevent 
+    !   data leaks between timesteps
+    !
+
+    !end subroutine resettangentbundle
+
+
+    subroutine writePressureState(this)
+    !
+    !   write pressure state out for 
+    !   plotting
+    !   
+        class(cfd), intent(in)         :: this
+
+        if (.not. this%useGPU) then
+            if (isDebug .eq. 1) print*, "CPU for cell pressures"
+            call writePressureStateCPU(this)
+        end if 
+
+        if ( this%useGPU ) then
+            if (isDebug .eq. 1) print*, "CUDA + GPU for cell pressures" 
+        ! TODO :   this%writePressureStateGPU_()
+        end if
+
+
+    end subroutine writepressurestate
+
+    subroutine writePressureStateCPU(this)
+    !
+    !   write pressure state of sustem to data/
+    !
+        class(cfd), intent(in) :: this
+        integer :: timestep_idx
+        integer :: i,j,k
+        integer :: unit
+        integer :: ios
+        character(len=64) :: filename
+
+        timestep_idx = nint(this%clock / this%timestep)
+
+        write(filename,'(A,I0)') 'data/fort.', timestep_idx
+
+        open(newunit=unit, file=filename, status='replace', action='write', form='formatted', iostat=ios)
+        if (ios /= 0) then
+            write(*,*) "Error opening file:", filename
+            return
+        end if
+
+        do k = 1, this%meshSize
+        do j = 1, this%meshSize
+        do i = 1, this%meshSize
+
+            write(unit,*) i, j, k, this%fluid%fluid(i,j,k)%cellPressure()
+            
+        end do
+        end do
+        end do
+
+        close(unit)
+
+
+    end subroutine writePressureStateCPU
+
+
+
+
+
+    subroutine loadTangentBundleCPU(this)
         !
         !   loads tangent bundle with 
         !   flux values
         !
         class(cfd), intent(inout) :: this
 
+        if (this%meshSize <= 0) then
+            write(*,*) "Error: mesh size N has not been set. Call setup() first."
+            stop 1
+        end if
+
+        if (this%specfHeat <= 0._dp) then
+            write(*,*) "Error: specific heat gamma has not been set. Call setup() first."
+            stop 1
+        end if
+
         call this%fluid%loadBundleCPU(this%specfHeat, this%meshSize)
 
-    end subroutine loadTangentBundleCPU_
+    end subroutine loadTangentBundleCPU
 
 
-    subroutine updateFromTangentBundleCPU_(this)
+    subroutine updateFromTangentBundleCPU(this)
         !
         !   updates the manifold from the tangent Bundle
         !
@@ -207,7 +297,7 @@ contains
         call this%fluid%updateCPU(this%timestep)
         this%clock = this%clock + this%timestep
 
-    end subroutine updateFromTangentBundleCPU_
+    end subroutine updateFromTangentBundleCPU
 
 
     subroutine destructorCFD__(this)

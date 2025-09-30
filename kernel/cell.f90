@@ -5,6 +5,7 @@ module cell
 !   provide update functionality
 !
     use numtype
+    use, intrinsic :: ieee_arithmetic
     implicit none
 
 
@@ -14,7 +15,7 @@ module cell
     !   
         real(dp)              :: U(5)        ! conserved quantities
         integer               :: location(3) ! (i,j,k)
-        real(dp)              :: volume
+        real(dp)              :: volume, spHeat
         integer               :: size
 
     contains
@@ -22,6 +23,9 @@ module cell
         procedure :: init
         procedure :: update
         procedure :: setLocation
+        ! functions
+        procedure :: cellPressure   ! harcoded as 20-100 C value for water
+                                    ! TODO: update it dynamically WRT temperature
 
         final     :: destructorCell__  
     end type cell
@@ -55,6 +59,7 @@ contains
 
         this%size   = 5
         this%volume = vol
+        this%spHeat = config(2)
 
     end subroutine init
 
@@ -85,6 +90,49 @@ contains
         this%location = coords
 
     end subroutine setLocation
+
+
+    function cellPressure(this) result(pressure)
+    !
+    !   Returns the pressure of the cell safely
+    !
+        class(cell), intent(in) :: this
+        real(dp)                :: pressure
+        ! private
+        real(dp) :: kinetic, rho, e_internal
+
+        ! Default to NaN if things go really bad
+        pressure = ieee_value(1.0_dp, ieee_quiet_nan)
+
+        rho = this%U(1)
+
+        if (this%volume <= 0 .or. this%size <= 0 .or. any(this%location <= 0)) then
+            print *, "Misconfigured cell"
+            error stop 1
+        end if
+
+        if (rho <= tiny(1.0_dp)) then
+            print *, "Invalid density in cell (rho ~ 0)"
+            return
+        end if
+
+        ! Kinetic energy per volume
+        kinetic = 0.5_dp * sum(this%U(2:4)**2) / rho
+
+        ! Internal energy per volume
+        e_internal = this%U(5) - kinetic
+
+        if (e_internal <= 0.0_dp) then
+            print *, "Non-physical state: negative internal energy"
+            return
+        end if
+
+        ! Pressure = (gamma - 1) * e_internal
+        pressure = (this%spHeat - 1.0_dp) * e_internal
+
+    end function cellPressure
+
+
 
     subroutine destructorCell__(this)
     !

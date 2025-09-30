@@ -1,0 +1,12 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+DATA_DIR="$SCRIPT_DIR/../data"
+
+if [ -d "$DATA_DIR" ]; then
+    find "$DATA_DIR" -mindepth 1 -delete
+    echo "✅ All files in $DATA_DIR have been deleted"
+else
+    echo "⚠️  Directory $DATA_DIR does not exist"
+fi
