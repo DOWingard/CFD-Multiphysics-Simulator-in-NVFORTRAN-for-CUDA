@@ -15,7 +15,7 @@ module cell
     !   
         real(dp)              :: U(5)        ! conserved quantities
         integer               :: location(3) ! (i,j,k)
-        real(dp)              :: volume, spHeat
+        real(dp)              :: volume, spHeat!, basis(:)
         integer               :: size
 
     contains
@@ -23,6 +23,7 @@ module cell
         procedure :: init
         procedure :: update
         procedure :: setLocation
+        !procedure :: computeBasis  ! TODO compute 3d basis
         ! functions
         procedure :: cellPressure   ! harcoded as 20-100 C value for water
                                     ! TODO: update it dynamically WRT temperature
@@ -131,6 +132,24 @@ contains
         pressure = (this%spHeat - 1.0_dp) * e_internal
 
     end function cellPressure
+
+    !subroutine computeBasis(this)
+    !
+    !   computes 3d basis for 
+    !   finite element sim
+    !
+    !    class(cell), intent(inout) :: this
+
+        ! /* TODO: COMMENT */
+        !
+        ! Make sure logic allows for 
+        ! allocation on host and converts
+        ! whole cell to a matrix representation
+        ! for matrix methods
+
+    !end subroutine computebasis
+
+
 
 
 

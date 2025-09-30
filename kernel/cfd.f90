@@ -28,13 +28,14 @@ module cfd
         procedure :: setState               ! Usage: ()
         procedure :: update                 ! Usage: ()
         procedure :: writePressureState     ! Usage: ()
+        ! TO DO
+        !procedure :: setFEbasis             ! Usage: ()
+
+
         ! private methods
         procedure :: writePressureStateCPU 
         procedure :: loadTangentBundleCPU
         procedure :: updateFromTangentBundleCPU
-
-        ! cleanup
-        !procedure :: resetTangentBundle
 
         final     :: destructorCFD__
 
@@ -197,14 +198,6 @@ contains
     end subroutine update
 
 
-    !subroutine resetTangentBundle(this)
-    !
-    !   resets the bundle to prevent 
-    !   data leaks between timesteps
-    !
-
-    !end subroutine resettangentbundle
-
 
     subroutine writePressureState(this)
     !
@@ -283,9 +276,6 @@ contains
 
 
 
-
-
-
     subroutine loadTangentBundleCPU(this)
         !
         !   loads tangent bundle with 
@@ -318,6 +308,21 @@ contains
         this%clock = this%clock + this%timestep
 
     end subroutine updateFromTangentBundleCPU
+
+
+    !subroutine setFEbasis(this) 
+    !
+    !   calls manifold%computeBasis 
+    !
+    !    class(cfd), intent(inout) :: this
+
+    !    call this%computeBasis()
+
+    !end subroutine setfebasis
+
+
+
+
 
 
     subroutine destructorCFD__(this)

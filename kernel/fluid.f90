@@ -25,6 +25,10 @@ module fluid
         procedure :: loadBundleCPU
         procedure :: initDensityGaussianCPU
         procedure :: updateCPU
+
+        ! CPU TODO
+        !procedure :: computeAllBasis  ! instructs cells to compute basis
+
         ! GPU
 
         !procedure :: updateManifold
@@ -256,10 +260,6 @@ contains
 
 
 
-
-
-
-
     subroutine initDensityGaussianCPU(this, N)
     !
     !   components the densities by scaling mesh
@@ -337,6 +337,16 @@ contains
 
     end subroutine updatecpu
 
+    !subroutine computeAllBasis(this)
+    !
+    !   computes the 3d basis functions
+    !   of each cell
+    !
+        !type(manifold), intent(inout) :: this 
+        
+        ! for all i,j,k call cell%computeBasis
+
+    !end subroutine computeAllBasis
 
 
     subroutine destructorManifold__(this)
