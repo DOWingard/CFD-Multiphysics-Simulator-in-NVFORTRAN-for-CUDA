@@ -13,6 +13,9 @@ Runs a 40x40x40 Finite Element model over .2 seconds (100 timesteps of 0.002s )
 * computes on parallelized CPU threads (12 threads with 16GB RAM)
 
 **Results**
+
+![Demo](plots/pressure_evolution.gif)
+
 For the displayed data I got:
 ```
  Total Computation Time:     9.188940 seconds
