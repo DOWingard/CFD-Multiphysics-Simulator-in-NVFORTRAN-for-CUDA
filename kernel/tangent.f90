@@ -6,37 +6,21 @@ module tangent
     use numtype
     implicit none 
 
-
     type flux 
-
         real(dp), allocatable :: fluxes(:,:)
-
     contains
-
         procedure :: setSize
-
+        final     :: destructorTangent__
     end type flux
 
 
-
-
     type bundle 
-
         class(flux), allocatable :: mesh(:,:,:)
-
     contains
-
         procedure :: alloc 
-
     end type bundle
 
-
-
-
-
-
 contains 
-
 
     subroutine alloc(this, size)
     !
@@ -46,29 +30,23 @@ contains
         integer, intent(in) :: size
         integer :: i,j,k
 
-        ! Allocate the 3D mesh
         allocate(this%mesh(size,size,size))
 
         !=========================================================
         !$OMP PARALLEL DO COLLAPSE(3) PRIVATE(i,j,k)
         !=========================================================
-
         do k = 1, size
         do j = 1, size
         do i = 1, size
-
             call this%mesh(i,j,k)%setSize(size)
-
         end do
         end do
         end do
-
         !=========================================================
         !$OMP END PARALLEL DO
         !=========================================================
 
     end subroutine alloc
-
 
     subroutine setSize(this, size)
     !
@@ -81,6 +59,16 @@ contains
         allocate(this%fluxes(6,size))
 
     end subroutine setsize
-    
+
+    subroutine destructorTangent__(this)
+    !
+    !   deallocate the cells
+    !
+        type(flux), intent(inout) :: this
+
+        if (allocated(this%fluxes)) then
+            deallocate(this%fluxes)
+        end if
+    end subroutine destructortangent__
 
 end module tangent

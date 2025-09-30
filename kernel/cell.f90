@@ -23,10 +23,14 @@ module cell
         procedure :: update
         procedure :: setLocation
 
+        final     :: destructorCell__  
     end type cell
 
 
 contains 
+
+
+
 
     subroutine init(this, config, vol)
     !
@@ -40,7 +44,6 @@ contains
         real(dp)                   :: e_, Energy
 
         ! compressible fluid kernel
-
         e_     = config(1) / (config(3) * (config(2) - 1)) 
         Energy = e_ + 0.5_dp * sum(config(4:6)**2)
 
@@ -82,6 +85,18 @@ contains
         this%location = coords
 
     end subroutine setLocation
+
+    subroutine destructorCell__(this)
+    !
+    !   final for cell
+    !
+        type(cell), intent(inout) :: this
+
+        this%volume = -1.0_dp
+        this%size   = -1
+        this%location = 0
+
+    end subroutine destructorCell__
 
 
 

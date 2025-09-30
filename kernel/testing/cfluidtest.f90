@@ -1,4 +1,4 @@
-program CFluid
+program CFluidtest
 !
 !   main program to run compressible fluid FIE simulation
 !
@@ -18,7 +18,7 @@ integer    :: location(3)
 ! specify the fluid initial state
 config = (/ &
             1.0e5_dp,  &! (p      : pressure)
-            7.00_dp,   &! (\gamma : specific heat ratio)  1.4 for air
+            4.186_dp,  &! (\gamma : specific heat ratio) 
             1000.0_dp, &! (\rho   : density)
             0.0_dp,    &! (x-velocity)
             0.0_dp,    &! (y-velocity)
@@ -41,4 +41,4 @@ print*, fecell%location, fecell%U
 
 
 
-end program cfluid
+end program cfluidtest

@@ -29,7 +29,7 @@ module fluid
 
         !procedure :: updateManifold
 
-        final     :: destructor
+        final     :: destructorManifold__
 
     end type  
 
@@ -37,12 +37,12 @@ module fluid
 
 contains
 
-    subroutine initCellWater_(this, cell, volume)
+    subroutine initCellWater_(this, location, volume)
     !
     !   initialize the cell
     !
         class(manifold), intent(inout) :: this
-        class(cell), intent(inout)     :: cell
+        integer, intent(in)            :: location(3)
         real(dp), intent(in)           :: volume
         ! private
         real(dp)                       :: config(6)
@@ -50,14 +50,14 @@ contains
 
         config = (/ &
             1.0e5_dp,  &! (p      : pressure)
-            7.00_dp,   &! (\gamma : specific heat ratio)  
+            4.186_dp,  &! (\gamma : specific heat ratio)  
             1000.0_dp, &! (\rho   : density)
             0.0_dp,    &! (       : x-velocity)
             0.0_dp,    &! (       : y-velocity)
             0.0_dp     &! (       : z-velocity)
          /)
 
-        call cell%init(config,volume)
+        call this%fluid(location(1),location(2),location(3))%init(config, volume)
 
     end subroutine initcellwater_
 
@@ -104,6 +104,19 @@ contains
 
         this%N = N
 
+        ! allocate separately solved memory bug
+        do i = 1,N
+        do j = 1,N
+        do k = 1,N
+
+            location =  (/ i,j,k /)
+            allocate(this%fluid(i,j,k))
+
+        end do
+        end do
+        end do
+
+
         !=========================================================
         !$OMP PARALLEL DO COLLAPSE(3) PRIVATE(i,j,k,location)
         !=========================================================
@@ -114,10 +127,8 @@ contains
 
             location =  (/ i,j,k /)
 
-            allocate(this%fluid(i,j,k))
-
             call assignLocation_(this, location)
-            call initCellWater_(this, this%fluid(i,j,k),  volume)
+            call initCellWater_(this, location,  volume)
  
 
         end do
@@ -150,7 +161,7 @@ contains
     end subroutine
 
 
-    subroutine loadBundleCPU(this, dt, ds, gamma, N) 
+    subroutine loadBundleCPU(this, gamma, N) 
     !
     !   computes the total change to cells
     !   using sum of Rusanov FLuxes and
@@ -158,7 +169,7 @@ contains
     !
     !   assumed dx,dy,dz = ds 
         class(manifold), intent(inout) :: this 
-        real(dp), intent(in)           :: dt, ds, gamma
+        real(dp), intent(in)           :: gamma
         integer, intent(in)            :: N
         ! private
         integer              :: i, j, k, f
@@ -187,7 +198,7 @@ contains
                         nhat = (/-1,0,0/)
                     case(2) ! i+
                         if (i == N) cycle
-                        ni = i; nj = j; nk = k
+                        ni = i+1; nj = j; nk = k        
                         nhat = (/1,0,0/)
                     case(3) ! j-
                         if (j == 1) cycle
@@ -195,7 +206,7 @@ contains
                         nhat = (/0,-1,0/)
                     case(4) ! j+
                         if (j == N) cycle
-                        ni = i; nj = j; nk = k
+                        ni = i; nj = j+1; nk = k        
                         nhat = (/0,1,0/)
                     case(5) ! k-
                         if (k == 1) cycle
@@ -203,7 +214,7 @@ contains
                         nhat = (/0,0,-1/)
                     case(6) ! k+
                         if (k == N) cycle
-                        ni = i; nj = j; nk = k
+                        ni = i; nj = j; nk = k+1        
                         nhat = (/0,0,1/)
                     end select
 
@@ -266,13 +277,13 @@ contains
 
 
 
-    subroutine updateCPU(this, dt, ds)
+    subroutine updateCPU(this, dt)
     !
     !   Updates all cells in the manifold using
     !   the 6 stored fluxes in the tangent bundle.
     !
         class(manifold), intent(inout) :: this
-        real(dp), intent(in)           :: dt, ds
+        real(dp), intent(in)           :: dt
         integer                        :: i,j,k,f
         real(dp)                       :: dU(5)
         integer                        :: N
@@ -292,7 +303,7 @@ contains
                 dU = dU + this%tangentBundle%mesh(i,j,k)%fluxes(f,:)   ! returns NAN
             end do
 
-            dU = - dt / ds * dU
+            dU = - dt / (this%fluid(i,j,k)%volume * dU )
 
             ! Update cell's conserved variables
             this%fluid(i,j,k)%U = this%fluid(i,j,k)%U + dU    ! dU is NAN
@@ -308,15 +319,39 @@ contains
 
 
 
-    subroutine destructor(this)
-    !
-    !   possible cleanup stuff
-    !
+    subroutine destructorManifold__(this)
+        !
+        !   Finalizer for manifold: safely deallocate all internal memory
+        !
         type(manifold), intent(inout) :: this
+        integer :: i,j,k
 
-        ! IDK YET
 
-    end subroutine destructor
+        if (allocated(this%fluid)) then
+            deallocate(this%fluid)
+        end if
+
+        if (allocated(this%tangentBundle)) then
+            if (allocated(this%tangentBundle%mesh)) then
+                do k = 1, size(this%tangentBundle%mesh,3)
+                do j = 1, size(this%tangentBundle%mesh,2)
+                do i = 1, size(this%tangentBundle%mesh,1)
+                    if (allocated(this%tangentBundle%mesh(i,j,k)%fluxes)) then
+                        deallocate(this%tangentBundle%mesh(i,j,k)%fluxes)
+                    end if
+                end do
+                end do
+                end do
+                deallocate(this%tangentBundle%mesh)
+            end if
+            deallocate(this%tangentBundle)
+        end if
+
+
+        this%N = -1
+        this%coords = 0
+
+    end subroutine destructorManifold__
 
 
 
@@ -347,7 +382,7 @@ function rusFlux(cellL, cellR, gamma, nhat) result(flux)
     vL   = cellL%U(3)/rhoL
     wL   = cellL%U(4)/rhoL
     EL   = cellL%U(5)/rhoL
-    pL   = (gamma-1.0_dp)*(rhoL*EL - 0.5_dp*rhoL*(uL**2+vL**2+wL**2))
+    pL   = max((gamma-1.0_dp)*(rhoL*EL - 0.5_dp*rhoL*(uL**2+vL**2+wL**2)), 1e-12_dp) ! Safe precaution, can be more nuanced lated
     
 
     ! cellR 
@@ -356,7 +391,7 @@ function rusFlux(cellL, cellR, gamma, nhat) result(flux)
     vR   = cellR%U(3)/rhoR
     wR   = cellR%U(4)/rhoR
     ER   = cellR%U(5)/rhoR
-    pR   = (gamma-1.0_dp)*(rhoR*ER - 0.5_dp*rhoR*(uR**2+vR**2+wR**2))
+    pL   = max((gamma-1.0_dp)*(rhoL*EL - 0.5_dp*rhoL*(uL**2+vL**2+wL**2)), 1e-12_dp)
 
 
     ! flux vector components
@@ -392,12 +427,14 @@ function pressureAtCenter(N) result(p)
     integer, intent(in) :: N
     real(dp), allocatable :: p(:,:,:)
     integer :: i, j, k, ic, jc, kc
-    real(dp) :: r2, sigma
+    real(dp) :: r2, sigma, scale
 
     
     ic = N/2
     jc = N/2
     kc = N/2
+
+    scale = 1._dp ! range is from [1,1+scale]
 
     sigma = N / 6 ! reasonable bump sharpness
 
@@ -410,7 +447,7 @@ function pressureAtCenter(N) result(p)
         do j = 1, N
             do k = 1, N
                 r2 = real((i-ic)**2 + (j-jc)**2 + (k-kc)**2, dp)
-                p(i,j,k) = 1.0_dp + 4.0_dp * exp(-r2 / (2.0_dp*sigma**2))
+                p(i,j,k) = (1._dp + scale) * exp(-r2 / (2.0_dp*sigma**2))
             end do
         end do
     end do
