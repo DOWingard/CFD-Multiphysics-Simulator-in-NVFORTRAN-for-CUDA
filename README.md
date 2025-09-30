@@ -9,7 +9,7 @@ Simulation runs and logs time.
 **Current Setup**
 
 Runs a 40x40x40 Finite Element model over .2 seconds (100 timesteps of 0.002s ) 
-* gets pretty unstable quickly after this
+* gets pretty unstable quickly after this (no longer sparse NaN (>1%))
 * computes on parallelized CPU threads (12 threads with 16GB RAM)
 
 **Results**
