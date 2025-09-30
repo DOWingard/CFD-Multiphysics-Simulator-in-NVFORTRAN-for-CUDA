@@ -1,8 +1,9 @@
-# CFD MultiPhysics Finite Element Simulator in NVFORTRAN for parallelized CPU or GPU
+# CFD (to be MultiPhysics) (to be FE) Simulator in NVFORTRAN for parallelized CPU or GPU
 Currently just simulates water with a pressure gradient and suffers to be numerically stable
+Finite Element setup in developement once BVP solver implimented in each cell
 
 ## Current Simulation
-The manifold is a 3d mesh of cell objects which can be assigned a conserved quantity vector U(:) and uses a subroutine to set it up from water. Will be modularized later to impliment a standard process of adding a different simiulation kernel (ie plasma). The manifold gets updated by calculating a tangent bundle, where the Rusanov flux across every face is calculated and stored in tangent bundle mesh which can be used to write the t+1 state of the corresponding cell of the main manifold. The comparison of t,t+1 values is used for smoothing to help numerical stability (doesn't do a lot lol). There is a smoothing post processing script that handles it indirectly, but lasting numerical stability is going to be a dedicated effort.
+The manifold is a 3d mesh of cubic cell objects which can be assigned a conserved quantity vector U(:) and uses a subroutine to set it up from water. Will be modularized later to impliment a standard process of adding a different simiulation kernel (ie plasma). The manifold gets updated by calculating a tangent bundle, where the Rusanov flux across every face is calculated and stored in tangent bundle mesh which can be used to write the t+1 state of the corresponding cell of the main manifold. The comparison of t,t+1 values is used for smoothing to help numerical stability (doesn't do a lot lol). There is a smoothing post processing script that handles it indirectly, but lasting numerical stability is going to be a dedicated effort. 
 
 Simulation runs and logs time.
 
@@ -106,7 +107,7 @@ The plotting here is based around mean fluctuations because they are not super v
 
 
 # Scalability
-The model gets allocated on host and, while not modularized at the moment, one can add a different kernel, cell computations, and tangent bundle tensor to change the simulation 
+The model gets allocated on host and, while not modularized at the moment, one can add a different kernel, cell computations, and tangent bundle tensor to change the simulation. There are some hardcoded num_conserved_values=5 instances, but can easily be (***TODO***) **made arbitrary and build a kernelLoader type that lets the user build a kernal from an abstract that the loader can seed the Manifold with**
 
 # NOTES
 The gif, even though smoothed, clearly shows NaN instability growing near the end of the simulation. This seems to be only on the boundaries, so the boundary conditions are potentially where they could be coming from
@@ -114,12 +115,12 @@ The gif, even though smoothed, clearly shows NaN instability growing near the en
 
 ## Important TODOs
 
-* Modularize setting boundary conditions <=> could solve some divergences if treated carefully
-* Allow all the properties written to the conserved quanitities vector to be accessed dynamically so feedback can be incorporated for multiphysics simluation
-* Integrate Lapack and the matrix.f90 wrappers file with d01b.f90. With chebyshev.f90, this gives EXTREMELY stable numerical integration, root solving, and differentiation.
-* MAKE MORE NUMERICALLY STABLE
+* **Modularize setting boundary conditions <=> could solve some divergences if treated carefully**
+* **Allow all the properties written to the conserved quanitities vector to be accessed dynamically so feedback can be incorporated for multiphysics simluation**
+* **Integrate Lapack and the matrix.f90 wrappers file with d01b.f90. With chebyshev.f90, this gives EXTREMELY stable numerical integration, root solving, and differentiation.**
+* **MAKE MORE NUMERICALLY STABLE**
     * Use chebyshev routine to calculate differentials using recursion where possible to improve the Rusanov process
-* GPU Methods
-* Pipeline the build process that wraps with python to plot outputs
+* **GPU Methods**
+* **Pipeline the build process that wraps with python to plot outputs**
 
 
