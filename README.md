@@ -97,7 +97,7 @@ __in ROOT/kernel__
 * empty -> cleans data/ folder
 
 ## Smoothing
-Numerical stability is hard, but when its sparse issues, A simple smoothing postprocessing script can work. Using
+Numerical stability is hard, but when divergences are sparse, a simple smoothing postprocessing script can work. Using
 ```bash
 ./pyinterface/smooth.py
 ```
