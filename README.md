@@ -108,7 +108,7 @@ The plotting here is based around mean fluctuations because they are not super v
 
 
 # Scalability
-The model gets allocated on host and, while not modularized at the moment, one can add a different kernel, cell computations, and tangent bundle tensor to change the simulation. There are some hardcoded num_conserved_values=5 instances, but can easily be (***TODO***) **made arbitrary and build a kernelLoader type that lets the user build a kernal from an abstract that the loader can seed the Manifold with**
+The model gets allocated on host and, while not modularized at the moment, one can add a different kernel, cell computations, and tangent bundle tensor to change the simulation. There are some hardcoded num_conserved_values=5 instances, but can easily be (***TODO***) **made arbitrary and build a kernelLoader type that lets the user build a kernal from an abstract interface that the loader can seed the Manifold with**
 
 # NOTES
 The gif, even though smoothed, clearly shows NaN instability growing near the end of the simulation. This seems to be only on the boundaries, so the boundary conditions are potentially where they could be coming from
