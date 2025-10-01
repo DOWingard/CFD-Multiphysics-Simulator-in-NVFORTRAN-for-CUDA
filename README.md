@@ -1,5 +1,6 @@
 # CFD (to be MultiPhysics) (to be FE) Simulator in NVFORTRAN for parallelized CPU or GPU
 Currently just simulates water with a pressure gradient and suffers to be numerically stable
+
 Finite Element setup in developement once BVP solver implimented in each cell
 
 ## Current Simulation
