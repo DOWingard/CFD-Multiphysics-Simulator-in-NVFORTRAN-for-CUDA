@@ -50,7 +50,7 @@ then you can do
 ```bash
 make
 ```
-to compil and 
+to compile, and 
 ```bash
 make clean
 ```
